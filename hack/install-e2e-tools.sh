@@ -27,10 +27,6 @@ if [[ -z "${KOPS_ROOT}" ]]; then
     KOPS_ROOT="$(cwd)/kops"
 fi
 
-cd "$HOME/Projects/kubetest2/" > /dev/null
-#go install sigs.k8s.io/kubetest2/...@latest
-go install ./kubetest2-tester-ginkgo
-
 cd "${KOPS_ROOT}/tests/e2e" > /dev/null
 go install ./kubetest2-tester-kops
 go install ./kubetest2-kops
