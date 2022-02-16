@@ -1110,6 +1110,7 @@ k8s.io/apiserver v0.23.0/go.mod h1:Cec35u/9zAepDPPFyT+UMrgqOCjgJ5qtfVJDxjZYmt4=
 k8s.io/cli-runtime v0.23.0/go.mod h1:B5N3YH0KP1iKr6gEuJ/RRmGjO0mJQ/f/JrsmEiPQAlU=
 k8s.io/client-go v0.23.0 h1:vcsOqyPq7XV3QmQRCBH/t9BICJM9Q1M18qahjv+rebY=
 k8s.io/client-go v0.23.0/go.mod h1:hrDnpnK1mSr65lHHcUuIZIXDgEbzc7/683c6hyG4jTA=
+k8s.io/cloud-provider v0.23.0 h1:9LATZJu57XanN7po4Xfj6jTLp44uhKiu5Xa3+3Cutz0=
 k8s.io/cloud-provider v0.23.0/go.mod h1:vY9zulPUCjwCg9TBMh5Qi42JUZUNecQNF7FojNELWws=
 k8s.io/cluster-bootstrap v0.23.0/go.mod h1:VltEnKWfrRTiKgOXp3ts3vh7yqNlH6KFKFflo9GtCBg=
 k8s.io/code-generator v0.23.0/go.mod h1:vQvOhDXhuzqiVfM/YHp+dmg10WDZCchJVObc9MvowsE=

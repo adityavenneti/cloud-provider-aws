@@ -16,9 +16,11 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/cloud-provider-aws/tests/e2e/testsuites"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 )
 
 var _ = Describe("[cloud-provider-aws-e2e] loadbalancer", func() {
@@ -44,5 +46,63 @@ var _ = Describe("[cloud-provider-aws-e2e] loadbalancer", func() {
 			Service: service,
 		}
 		test.Run(cs, ns)
+	})
+
+	It("should configure the loadbalancer based on annotations", func() {
+		loadBalancerCreateTimeout := e2eservice.GetServiceLoadBalancerCreationTimeout(cs)
+		framework.Logf("Running tests against AWS with timeout %s", loadBalancerCreateTimeout)
+
+		serviceName := "lbconfig-test"
+		framework.Logf("namespace for load balancer conig test: %s", ns.Name)
+
+		By("creating a TCP service " + serviceName + " with type=LoadBalancerType in namespace " + ns.Name)
+		lbJig := e2eservice.NewTestJig(cs, ns.Name, serviceName)
+
+		serviceUpdateFunc := func(svc *v1.Service) {
+			annotations := make(map[string]string)
+			annotations["aws-load-balancer-backend-protocol"] = "http"
+			annotations["aws-load-balancer-ssl-ports"] = "https"
+
+			svc.Annotations = annotations
+			svc.Spec.Ports = []v1.ServicePort{
+				{
+					Name:       "http",
+					Protocol:   v1.ProtocolTCP,
+					Port:       int32(80),
+					TargetPort: intstr.FromInt(80),
+				},
+				{
+					Name:       "https",
+					Protocol:   v1.ProtocolTCP,
+					Port:       int32(443),
+					TargetPort: intstr.FromInt(80),
+				},
+			}
+		}
+
+		lbService, err := lbJig.CreateLoadBalancerService(loadBalancerCreateTimeout, serviceUpdateFunc)
+		framework.ExpectNoError(err)
+
+		By("creating a pod to be part of the TCP service " + serviceName)
+		_, err = lbJig.Run(nil)
+		framework.ExpectNoError(err)
+
+		By("hitting the TCP service's LB External IP")
+		svcPort := int(lbService.Spec.Ports[0].Port)
+		ingressIP := e2eservice.GetIngressPoint(&lbService.Status.LoadBalancer.Ingress[0])
+		framework.Logf("Load balancer's ingress IP: %s", ingressIP)
+
+		e2eservice.TestReachableHTTP(ingressIP, svcPort, e2eservice.KubeProxyLagTimeout)
+
+		// Update the service to cluster IP
+		By("changing TCP service back to type=ClusterIP")
+		_, err = lbJig.UpdateService(func(s *v1.Service) {
+			s.Spec.Type = v1.ServiceTypeClusterIP
+		})
+		framework.ExpectNoError(err)
+
+		// Wait for the load balancer to be destroyed asynchronously
+		_, err = lbJig.WaitForLoadBalancerDestroy(ingressIP, svcPort, loadBalancerCreateTimeout)
+		framework.ExpectNoError(err)
 	})
 })
